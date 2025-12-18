@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"plans-features/internal/db"
 	"plans-features/internal/domain/apikeys"
 	"plans-features/internal/domain/features"
 	"plans-features/internal/domain/planfeatures"
@@ -21,7 +22,7 @@ type ctxKey string
 
 const CtxProjectID ctxKey = "project_id"
 
-func NewRouter() http.Handler {
+func NewRouter(db *db.DB) http.Handler {
 	r := chi.NewRouter()
 
 	// -------------------------

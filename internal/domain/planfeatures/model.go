@@ -17,9 +17,9 @@ type PlanFeatureResponse struct {
 
 // internal entity
 type planFeatureEntity struct {
-	ID        string
-	PlanID    string
-	ProjectID string
-	FeatureID string
-	Value     interface{}
+	ID        string      `db:"id"`
+	PlanID    string      `db:"plan_id"`
+	ProjectID string      `db:"project_id"`
+	FeatureID string      `db:"feature_id"`
+	Value     interface{} `db:"value"`
 }

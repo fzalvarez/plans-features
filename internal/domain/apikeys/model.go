@@ -1,22 +1,32 @@
 package apikeys
 
-import "time"
+import (
+	"time"
 
-// CreateAPIKeyResult contiene la clave raw (entregada solo una vez) y metadatos guardados
-type CreateAPIKeyResult struct {
-	RawKey string
-	Key    APIKeyResponse
+	"github.com/google/uuid"
+)
+
+// Para DB (Scan)
+type APIKey struct {
+	ID        uuid.UUID `db:"id"`
+	ProjectID uuid.UUID `db:"project_id"`
+	KeyHash   string    `db:"key_hash"`
+	KeyPrefix string    `db:"key_prefix"`
+	Revoked   bool      `db:"revoked"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
-// CreateAPIKeyRequest no necesita campos por ahora
-type CreateAPIKeyRequest struct{}
+type CreateAPIKeyResult struct {
+	RawKey string         `json:"raw_key"`
+	Key    APIKeyResponse `json:"key"`
+}
 
-// RevokeAPIKeyRequest puede opcionalmente especificar un prefijo de key a revocar
+type CreateAPIKeyRequest struct{} // Vacío por ahora
+
 type RevokeAPIKeyRequest struct {
 	KeyPrefix *string `json:"key_prefix,omitempty"`
 }
 
-// APIKeyResponse representa la información almacenada de una API key (sin el raw)
 type APIKeyResponse struct {
 	ID        string    `json:"id"`
 	ProjectID string    `json:"project_id"`
@@ -25,7 +35,7 @@ type APIKeyResponse struct {
 	Revoked   bool      `json:"revoked"`
 }
 
-// entidad interna
+// Interno para DB (sin uuid.UUID para Scan simple)
 type apiKeyEntity struct {
 	ID        string
 	ProjectID string

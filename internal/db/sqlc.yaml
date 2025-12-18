@@ -1,1 +1,2 @@
-# TODO: configuración de sqlc
+database:
+  url: "postgres://postgres:040836@localhost:5432/bookclaims?sslmode=disable"
