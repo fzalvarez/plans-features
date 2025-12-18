@@ -19,10 +19,13 @@ func NewPlanHandler(service PlanService) *PlanHandler {
 
 // ListPlans godoc
 // @Summary List plans for a project
-// @Tags Plans
+// @Description List available plans for the project identified by the API key
+// @Tags plans
 // @Produce json
-// @Param projectId header string true "Project ID from API key"
+// @Param X-API-Key header string true "API Key"
 // @Success 200 {array} plans.PlanResponse
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /api/plans [get]
 func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	projectID, ok := r.Context().Value("project_id").(string)
@@ -40,11 +43,16 @@ func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 
 // CreatePlan godoc
 // @Summary Create a plan for a project
-// @Tags Plans
+// @Description Create a new plan for the project identified by the API key
+// @Tags plans
 // @Accept json
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param plan body plans.CreatePlanRequest true "Create plan"
 // @Success 201 {object} plans.PlanResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /api/plans [post]
 func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	projectID, ok := r.Context().Value("project_id").(string)
@@ -71,10 +79,15 @@ func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 
 // GetPlan godoc
 // @Summary Get a plan by ID
-// @Tags Plans
+// @Description Retrieve a plan for the project identified by the API key
+// @Tags plans
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param planId path string true "Plan ID"
 // @Success 200 {object} plans.PlanResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /api/plans/{planId} [get]
 func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	projectID, ok := r.Context().Value("project_id").(string)
@@ -97,12 +110,18 @@ func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 
 // UpdatePlan godoc
 // @Summary Update a plan
-// @Tags Plans
+// @Description Update fields of a plan for the project identified by the API key
+// @Tags plans
 // @Accept json
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param planId path string true "Plan ID"
 // @Param plan body plans.UpdatePlanRequest true "Update plan"
 // @Success 200 {object} plans.PlanResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /api/plans/{planId} [put]
 func (h *PlanHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 	projectID, ok := r.Context().Value("project_id").(string)

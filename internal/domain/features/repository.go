@@ -3,6 +3,7 @@ package features
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +25,10 @@ func NewFeatureRepository() FeatureRepository {
 	}
 }
 
+func normalizeCode(code string) string {
+	return strings.ToLower(strings.TrimSpace(code))
+}
+
 func (r *featureRepository) List(ctx context.Context, projectID string) ([]FeatureResponse, error) {
 	res := make([]FeatureResponse, 0)
 	for _, v := range r.data {
@@ -36,13 +41,18 @@ func (r *featureRepository) List(ctx context.Context, projectID string) ([]Featu
 
 func (r *featureRepository) Create(ctx context.Context, projectID string, req CreateFeatureRequest) (*FeatureResponse, error) {
 	id := uuid.New().String()
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
 	f := FeatureResponse{
 		ID:          id,
 		ProjectID:   projectID,
-		Code:        req.Code,
+		Code:        normalizeCode(req.Code),
+		Type:        req.Type,
 		Name:        req.Name,
 		Description: req.Description,
-		IsActive:    req.IsActive,
+		IsActive:    isActive,
 	}
 	r.data[id] = f
 	return &f, nil

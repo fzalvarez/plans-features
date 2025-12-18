@@ -1,0 +1,23 @@
+-- 003_create_plans.sql
+-- Tabla: plans
+-- Descripción: planes asociados a un project. Cada proyecto puede tener múltiples planes; uno puede ser el "default".
+-- Columnas principales:
+--   id          : uuid (PK)
+--   project_id  : uuid (FK -> projects.id)
+--   code        : text (código único dentro del project, normalizado lowercase)
+--   name        : text
+--   description : text (nullable)
+--   is_active   : boolean
+--   is_default  : boolean
+--   limits      : jsonb (nullable) — límites/metadata del plan
+--   created_at  : timestamp
+--   updated_at  : timestamp
+-- Claves y restricciones:
+--   PRIMARY KEY (id)
+--   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+-- Índices y unicidades:
+--   UNIQUE (project_id, code) -- código único por proyecto
+--   idx_plans_project_id (project_id)
+-- Notas:
+--   - is_default deberá ser único por project vía lógica de aplicación o restricción parcial.
+--   - limits almacenado como JSONB para flexibilidad.

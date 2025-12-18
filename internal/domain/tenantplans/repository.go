@@ -13,6 +13,9 @@ type TenantPlanRepository interface {
 	ListByTenant(ctx context.Context, tenantID string) ([]TenantPlanResponse, error)
 	Create(ctx context.Context, tenantID string, req CreateTenantPlanRequest) (*TenantPlanResponse, error)
 	Update(ctx context.Context, tenantID string, assignmentID string, req UpdateTenantPlanRequest) (*TenantPlanResponse, error)
+	// API methods
+	GetByTenantAndProject(ctx context.Context, tenantID string, projectID string) (*TenantPlanResponse, error)
+	UpsertByTenantAndProject(ctx context.Context, tenantID string, projectID string, planID string) (*TenantPlanResponse, error)
 }
 
 type tenantPlanRepository struct {
@@ -54,5 +57,29 @@ func (r *tenantPlanRepository) Update(ctx context.Context, tenantID string, assi
 		tp.PlanID = *req.PlanCode
 	}
 	r.data[assignmentID] = tp
+	return &tp, nil
+}
+
+func (r *tenantPlanRepository) GetByTenantAndProject(ctx context.Context, tenantID string, projectID string) (*TenantPlanResponse, error) {
+	for _, v := range r.data {
+		if v.TenantID == tenantID && v.ProjectID == projectID {
+			return &v, nil
+		}
+	}
+	return nil, errors.New("not found")
+}
+
+func (r *tenantPlanRepository) UpsertByTenantAndProject(ctx context.Context, tenantID string, projectID string, planID string) (*TenantPlanResponse, error) {
+	// if exists update, else create
+	for id, v := range r.data {
+		if v.TenantID == tenantID && v.ProjectID == projectID {
+			v.PlanID = planID
+			r.data[id] = v
+			return &v, nil
+		}
+	}
+	id := uuid.New().String()
+	tp := TenantPlanResponse{ID: id, TenantID: tenantID, ProjectID: projectID, PlanID: planID}
+	r.data[id] = tp
 	return &tp, nil
 }

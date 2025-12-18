@@ -6,6 +6,7 @@ import (
 
 	"plans-features/internal/domain/apikeys"
 	"plans-features/internal/domain/features"
+	"plans-features/internal/domain/planfeatures"
 	"plans-features/internal/domain/plans"
 	"plans-features/internal/domain/projects"
 	"plans-features/internal/domain/tenantplans"
@@ -31,6 +32,7 @@ func NewRouter() http.Handler {
 	featureRepo := features.NewFeatureRepository()
 	tenantPlanRepo := tenantplans.NewTenantPlanRepository()
 	apiKeyRepo := apikeys.NewAPIKeyRepository()
+	planFeatureRepo := planfeatures.NewPlanFeatureRepository()
 
 	// -------------------------
 	// Services with dependencies
@@ -50,6 +52,8 @@ func NewRouter() http.Handler {
 
 	apiKeyService := apikeys.NewAPIKeyService(apiKeyRepo, projectRepo)
 
+	planFeatureService := planfeatures.NewPlanFeatureService(planFeatureRepo, planRepo, featureRepo, projectRepo)
+
 	// -------------------------
 	// Handlers
 	// -------------------------
@@ -59,6 +63,7 @@ func NewRouter() http.Handler {
 	featureHandler := features.NewFeatureHandler(featureService)
 	tenantPlanHandler := tenantplans.NewTenantPlanHandler(tenantPlanService)
 	apiKeyHandler := apikeys.NewAPIKeyHandler(apiKeyService)
+	planFeatureHandler := planfeatures.NewPlanFeatureHandler(planFeatureService)
 
 	// -------------------------
 	// Middleware: ApiKeyAuth
@@ -96,6 +101,12 @@ func NewRouter() http.Handler {
 	// Routes
 	// -------------------------
 
+	// -------------------------
+	// ADMIN routes (management)
+	// @Summary Admin endpoints
+	// @Description Administrative endpoints to manage Projects, Plans, Features, Tenant assignments and API keys
+	// @Tags projects, plans, features, apikeys, tenantplans
+	// -------------------------
 	r.Route("/admin", func(r chi.Router) {
 
 		// Projects
@@ -136,11 +147,33 @@ func NewRouter() http.Handler {
 	})
 
 	// API routes (require ApiKeyAuth middleware to set project_id in context)
+	// -------------------------
+	// @Summary Public API endpoints (scoped by API key)
+	// @Description API endpoints accessible with X-API-Key header. These endpoints operate within the project context derived from the API key.
+	// @Tags plans, features, planfeatures, tenantplans
+	// @Param X-API-Key header string true "API Key"
+	// -------------------------
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/plans", planHandler.ListPlans)
 		r.Post("/plans", planHandler.CreatePlan)
 		r.Get("/plans/{planId}", planHandler.GetPlan)
 		r.Put("/plans/{planId}", planHandler.UpdatePlan)
+
+		// Features API scoped by API key
+		r.Get("/features", featureHandler.ListFeatures)
+		r.Post("/features", featureHandler.CreateFeature)
+		r.Get("/features/{featureId}", featureHandler.GetFeature)
+		r.Put("/features/{featureId}", featureHandler.UpdateFeature)
+
+		// PlanFeatures routes
+		r.Route("/plans/{planId}/features", func(r chi.Router) {
+			r.Get("/", planFeatureHandler.List)
+			r.Post("/", planFeatureHandler.Assign)
+		})
+
+		// TenantPlans API: get effective plan and assign plan (scoped by API key)
+		r.Get("/tenants/{tenantId}/plan", tenantPlanHandler.GetTenantPlan)
+		r.Post("/tenants/{tenantId}/plan", tenantPlanHandler.AssignTenantPlan)
 	})
 
 	// -------------------------

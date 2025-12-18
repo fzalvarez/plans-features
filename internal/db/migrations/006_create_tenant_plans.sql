@@ -1,0 +1,19 @@
+-- 006_create_tenant_plans.sql
+-- Tabla: tenant_plans
+-- Descripción: asignación de un tenant a un plan dentro de un project (opción B)
+-- Columnas principales:
+--   id          : uuid (PK)
+--   tenant_id   : text (o uuid según modelo de tenants externo)
+--   project_id  : uuid (FK -> projects.id)
+--   plan_id     : uuid (FK -> plans.id)
+--   created_at  : timestamp
+--   updated_at  : timestamp
+-- Claves y restricciones:
+--   PRIMARY KEY (id)
+--   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+--   FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE
+-- Índices y unicidades:
+--   UNIQUE (tenant_id, project_id) -- un tenant solo puede tener un plan por project
+--   idx_tenant_plans_tenant_project (tenant_id, project_id)
+-- Notas:
+--   - Si no existe una fila para (tenant, project), el comportamiento es fallback al plan por defecto del project.

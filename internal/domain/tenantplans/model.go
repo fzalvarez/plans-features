@@ -1,12 +1,12 @@
 package tenantplans
 
-// CreateTenantPlanRequest representa la petición para asignar un plan a un tenant
+// CreateTenantPlanRequest representa la petición para asignar un plan a un tenant (admin)
 type CreateTenantPlanRequest struct {
 	ProjectCode string
 	PlanCode    string
 }
 
-// UpdateTenantPlanRequest representa la petición para actualizar la asignación
+// UpdateTenantPlanRequest representa la petición para actualizar la asignación (admin)
 type UpdateTenantPlanRequest struct {
 	PlanCode *string
 }
@@ -17,4 +17,9 @@ type TenantPlanResponse struct {
 	TenantID  string
 	ProjectID string
 	PlanID    string
+}
+
+// API request para asignar plan usando project_id desde context
+type PlanAssignRequest struct {
+	PlanID string `json:"plan_id"`
 }

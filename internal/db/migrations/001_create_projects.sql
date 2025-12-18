@@ -1,0 +1,19 @@
+-- 001_create_projects.sql
+-- Tabla: projects
+-- Descripción: tabla principal que contiene los proyectos/tenants lógicos sobre los cuales se crean planes y features.
+-- Columnas principales:
+--   id          : uuid (PK)
+--   code        : text (código único, normalizado en lowercase + trim) — UNIQUE (global)
+--   name        : text (nombre legible)
+--   description : text (nullable)
+--   is_active   : boolean (default true)
+--   created_at  : timestamp
+--   updated_at  : timestamp
+-- Claves y restricciones:
+--   PRIMARY KEY (id)
+--   UNIQUE (code)
+-- Índices sugeridos:
+--   idx_projects_code ON (code)
+-- Notas:
+--   - El campo 'code' debe estar normalizado en la capa de aplicación (lowercase, trim) y también puede llevar un índice único en BD.
+--   - created_at / updated_at para auditoría.

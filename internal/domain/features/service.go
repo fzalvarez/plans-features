@@ -3,7 +3,6 @@ package features
 import (
 	"context"
 	"errors"
-
 	"plans-features/internal/domain/projects"
 )
 
@@ -25,6 +24,15 @@ func NewFeatureService(repo FeatureRepository, projectRepo projects.ProjectRepos
 	return &featureService{repo: repo, projectRepo: projectRepo}
 }
 
+func isValidType(t string) bool {
+	switch t {
+	case "flag", "numeric", "value":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *featureService) ListFeatures(ctx context.Context, projectID string) ([]FeatureResponse, error) {
 	return s.repo.List(ctx, projectID)
 }
@@ -38,16 +46,21 @@ func (s *featureService) CreateFeature(ctx context.Context, projectID string, re
 	if req.Name == "" {
 		return nil, errors.New("name is required")
 	}
+	// type valid
+	if !isValidType(req.Type) {
+		return nil, errors.New("invalid type")
+	}
 	// code unique within project
 	existing, err := s.repo.List(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range existing {
-		if f.Code == req.Code {
+		if f.Code == normalizeCode(req.Code) {
 			return nil, errors.New("feature code already exists")
 		}
 	}
+	// default isActive handled by repo
 	return s.repo.Create(ctx, projectID, req)
 }
 

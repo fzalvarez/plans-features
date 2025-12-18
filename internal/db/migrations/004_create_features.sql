@@ -1,0 +1,21 @@
+-- 004_create_features.sql
+-- Tabla: features
+-- Descripción: características (flags/metrics/values) que pueden ser asignadas a planes.
+-- Columnas principales:
+--   id          : uuid (PK)
+--   project_id  : uuid (FK -> projects.id)
+--   code        : text (código único dentro del project)
+--   type        : text (enum: flag, numeric, value)
+--   name        : text
+--   description : text (nullable)
+--   is_active   : boolean
+--   created_at  : timestamp
+--   updated_at  : timestamp
+-- Claves y restricciones:
+--   PRIMARY KEY (id)
+--   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+-- Índices y unicidades:
+--   UNIQUE (project_id, code) -- código único por proyecto
+--   idx_features_project_id (project_id)
+-- Notas:
+--   - type puede ser un enum en BD o validarse en la capa de aplicación.

@@ -4,9 +4,10 @@ package features
 
 type CreateFeatureRequest struct {
 	Code        string
+	Type        string
 	Name        string
 	Description string
-	IsActive    bool
+	IsActive    *bool
 }
 
 type UpdateFeatureRequest struct {
@@ -19,6 +20,7 @@ type FeatureResponse struct {
 	ID          string
 	ProjectID   string
 	Code        string
+	Type        string
 	Name        string
 	Description string
 	IsActive    bool

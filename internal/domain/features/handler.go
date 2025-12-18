@@ -21,13 +21,20 @@ func NewFeatureHandler(service FeatureService) *FeatureHandler {
 
 // ListFeatures godoc
 // @Summary List features for a project
-// @Tags Features
+// @Description List features available for the project identified by the API key
+// @Tags features
 // @Produce json
-// @Param projectId path string true "Project ID"
+// @Param X-API-Key header string true "API Key"
 // @Success 200 {array} features.FeatureResponse
-// @Router /admin/projects/{projectId}/features [get]
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/features [get]
 func (h *FeatureHandler) ListFeatures(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
 	fs, err := h.service.ListFeatures(r.Context(), projectID)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err.Error())
@@ -38,22 +45,30 @@ func (h *FeatureHandler) ListFeatures(w http.ResponseWriter, r *http.Request) {
 
 // CreateFeature godoc
 // @Summary Create a feature for a project
-// @Tags Features
+// @Description Create a new feature for the project identified by the API key
+// @Tags features
 // @Accept json
 // @Produce json
-// @Param projectId path string true "Project ID"
+// @Param X-API-Key header string true "API Key"
 // @Param feature body features.CreateFeatureRequest true "Create feature"
 // @Success 201 {object} features.FeatureResponse
-// @Router /admin/projects/{projectId}/features [post]
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/features [post]
 func (h *FeatureHandler) CreateFeature(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
 	var req CreateFeatureRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	if req.Code == "" || req.Name == "" {
-		utils.Error(w, http.StatusBadRequest, "code and name are required")
+	if req.Code == "" || req.Name == "" || req.Type == "" {
+		utils.Error(w, http.StatusBadRequest, "code, type and name are required")
 		return
 	}
 	f, err := h.service.CreateFeature(r.Context(), projectID, req)
@@ -66,14 +81,22 @@ func (h *FeatureHandler) CreateFeature(w http.ResponseWriter, r *http.Request) {
 
 // GetFeature godoc
 // @Summary Get a feature by ID
-// @Tags Features
+// @Description Retrieve a feature for the project identified by the API key
+// @Tags features
 // @Produce json
-// @Param projectId path string true "Project ID"
+// @Param X-API-Key header string true "API Key"
 // @Param featureId path string true "Feature ID"
 // @Success 200 {object} features.FeatureResponse
-// @Router /admin/projects/{projectId}/features/{featureId} [get]
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/features/{featureId} [get]
 func (h *FeatureHandler) GetFeature(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
 	featureID := chi.URLParam(r, "featureId")
 	f, err := h.service.GetFeature(r.Context(), projectID, featureID)
 	if err != nil {
@@ -89,16 +112,25 @@ func (h *FeatureHandler) GetFeature(w http.ResponseWriter, r *http.Request) {
 
 // UpdateFeature godoc
 // @Summary Update a feature
-// @Tags Features
+// @Description Update fields of a feature for the project identified by the API key
+// @Tags features
 // @Accept json
 // @Produce json
-// @Param projectId path string true "Project ID"
+// @Param X-API-Key header string true "API Key"
 // @Param featureId path string true "Feature ID"
 // @Param feature body features.UpdateFeatureRequest true "Update feature"
 // @Success 200 {object} features.FeatureResponse
-// @Router /admin/projects/{projectId}/features/{featureId} [patch]
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/features/{featureId} [put]
 func (h *FeatureHandler) UpdateFeature(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
 	featureID := chi.URLParam(r, "featureId")
 	var req UpdateFeatureRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

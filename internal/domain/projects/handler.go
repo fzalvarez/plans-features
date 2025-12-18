@@ -19,9 +19,13 @@ func NewProjectHandler(service ProjectService) *ProjectHandler {
 
 // ListProjects godoc
 // @Summary List projects
-// @Tags Projects
+// @Description Retrieve the list of projects
+// @Tags projects
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Success 200 {array} projects.ProjectResponse
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/projects [get]
 func (h *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	ps, err := h.service.ListProjects(r.Context())
@@ -34,11 +38,16 @@ func (h *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 
 // CreateProject godoc
 // @Summary Create a project
-// @Tags Projects
+// @Description Create a new project with unique code
+// @Tags projects
 // @Accept json
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param project body projects.CreateProjectRequest true "Create project"
 // @Success 201 {object} projects.ProjectResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/projects [post]
 func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req CreateProjectRequest
@@ -61,10 +70,15 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 // GetProject godoc
 // @Summary Get a project by ID
-// @Tags Projects
+// @Description Retrieve a project by its ID
+// @Tags projects
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param projectId path string true "Project ID"
 // @Success 200 {object} projects.ProjectResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId} [get]
 func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "projectId")
@@ -82,12 +96,18 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 
 // UpdateProject godoc
 // @Summary Update a project
-// @Tags Projects
+// @Description Update name/description/is_active of a project (code cannot be changed)
+// @Tags projects
 // @Accept json
 // @Produce json
+// @Param X-API-Key header string true "API Key"
 // @Param projectId path string true "Project ID"
 // @Param project body projects.UpdateProjectRequest true "Update project"
 // @Success 200 {object} projects.ProjectResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId} [put]
 func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "projectId")

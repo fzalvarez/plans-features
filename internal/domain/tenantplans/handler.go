@@ -21,10 +21,12 @@ func NewTenantPlanHandler(service TenantPlanService) *TenantPlanHandler {
 
 // ListAssignments godoc
 // @Summary List tenant assignments
-// @Tags TenantPlans
+// @Description Admin: list all plan assignments for a tenant
+// @Tags tenantplans
 // @Produce json
 // @Param tenantId path string true "Tenant ID"
 // @Success 200 {array} tenantplans.TenantPlanResponse
+// @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments [get]
 func (h *TenantPlanHandler) ListAssignments(w http.ResponseWriter, r *http.Request) {
 	tenantID := chi.URLParam(r, "tenantId")
@@ -38,12 +40,15 @@ func (h *TenantPlanHandler) ListAssignments(w http.ResponseWriter, r *http.Reque
 
 // CreateAssignment godoc
 // @Summary Create a tenant assignment
-// @Tags TenantPlans
+// @Description Admin: create a tenant assignment for a given project and plan
+// @Tags tenantplans
 // @Accept json
 // @Produce json
 // @Param tenantId path string true "Tenant ID"
 // @Param assignment body tenantplans.CreateTenantPlanRequest true "Create assignment"
 // @Success 201 {object} tenantplans.TenantPlanResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments [post]
 func (h *TenantPlanHandler) CreateAssignment(w http.ResponseWriter, r *http.Request) {
 	tenantID := chi.URLParam(r, "tenantId")
@@ -66,13 +71,17 @@ func (h *TenantPlanHandler) CreateAssignment(w http.ResponseWriter, r *http.Requ
 
 // UpdateAssignment godoc
 // @Summary Update a tenant assignment
-// @Tags TenantPlans
+// @Description Admin: update the plan for a tenant assignment
+// @Tags tenantplans
 // @Accept json
 // @Produce json
 // @Param tenantId path string true "Tenant ID"
 // @Param assignmentId path string true "Assignment ID"
 // @Param assignment body tenantplans.UpdateTenantPlanRequest true "Update assignment"
 // @Success 200 {object} tenantplans.TenantPlanResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments/{assignmentId} [patch]
 func (h *TenantPlanHandler) UpdateAssignment(w http.ResponseWriter, r *http.Request) {
 	tenantID := chi.URLParam(r, "tenantId")
@@ -89,6 +98,71 @@ func (h *TenantPlanHandler) UpdateAssignment(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		utils.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.JSON(w, http.StatusOK, p)
+}
+
+// API: GetTenantPlan godoc
+// @Summary Get effective tenant plan for a project
+// @Description Returns the assigned plan for tenant+project, falling back to project's default plan
+// @Tags tenantplans
+// @Produce json
+// @Param X-API-Key header string true "API Key"
+// @Param tenantId path string true "Tenant ID"
+// @Success 200 {object} tenantplans.TenantPlanResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/tenants/{tenantId}/plan [get]
+func (h *TenantPlanHandler) GetTenantPlan(w http.ResponseWriter, r *http.Request) {
+	tenantID := chi.URLParam(r, "tenantId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+	p, err := h.service.GetTenantPlan(r.Context(), tenantID, projectID)
+	if err != nil {
+		utils.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+	utils.JSON(w, http.StatusOK, p)
+}
+
+// API: AssignTenantPlan godoc
+// @Summary Assign a plan to tenant for the project from context
+// @Description Assigns or updates a tenant's plan for the project identified by the API key
+// @Tags tenantplans
+// @Accept json
+// @Produce json
+// @Param X-API-Key header string true "API Key"
+// @Param tenantId path string true "Tenant ID"
+// @Param body body tenantplans.PlanAssignRequest true "Assign plan"
+// @Success 200 {object} tenantplans.TenantPlanResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/tenants/{tenantId}/plan [post]
+func (h *TenantPlanHandler) AssignTenantPlan(w http.ResponseWriter, r *http.Request) {
+	tenantID := chi.URLParam(r, "tenantId")
+	projectID, ok := r.Context().Value("project_id").(string)
+	if !ok || projectID == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+	var req PlanAssignRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid body")
+		return
+	}
+	if req.PlanID == "" {
+		utils.Error(w, http.StatusBadRequest, "plan_id is required")
+		return
+	}
+	p, err := h.service.AssignTenantPlan(r.Context(), tenantID, projectID, req.PlanID)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	utils.JSON(w, http.StatusOK, p)

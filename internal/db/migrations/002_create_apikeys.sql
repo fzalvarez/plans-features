@@ -1,0 +1,19 @@
+-- 002_create_apikeys.sql
+-- Tabla: api_keys
+-- Descripción: almacena metadatos de las API keys; la clave raw NO se guarda en claro, solo su hash y un prefijo.
+-- Columnas principales:
+--   id         : uuid (PK)
+--   project_id : uuid (FK -> projects.id)
+--   key_hash   : text (sha256 hash del raw key)
+--   key_prefix : text (primeros N caracteres para inspección/routing)
+--   revoked    : boolean (default false)
+--   created_at : timestamp
+-- Claves y restricciones:
+--   PRIMARY KEY (id)
+--   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+-- Índices y unicidades:
+--   idx_api_keys_project_id (project_id)
+--   idx_api_keys_hash (key_hash)
+-- Notas:
+--   - Solo almacenar hash y prefijo por seguridad.
+--   - Si se desea soportar solo una key activa por project, se puede añadir una restricción o lógica de aplicación para marcar revocadas las previas.
