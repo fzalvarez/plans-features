@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +12,7 @@ type ProjectRepository interface {
 	List(ctx context.Context) ([]ProjectResponse, error)
 	Create(ctx context.Context, req CreateProjectRequest) (*ProjectResponse, error)
 	GetByID(ctx context.Context, id string) (*ProjectResponse, error)
+	GetByCode(ctx context.Context, code string) (*ProjectResponse, error)
 	Update(ctx context.Context, id string, req UpdateProjectRequest) (*ProjectResponse, error)
 }
 
@@ -32,14 +34,22 @@ func (r *projectRepository) List(ctx context.Context) ([]ProjectResponse, error)
 	return res, nil
 }
 
+func normalizeCode(code string) string {
+	return strings.ToLower(strings.TrimSpace(code))
+}
+
 func (r *projectRepository) Create(ctx context.Context, req CreateProjectRequest) (*ProjectResponse, error) {
 	id := uuid.New().String()
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
 	p := ProjectResponse{
 		ID:          id,
-		Code:        req.Code,
+		Code:        normalizeCode(req.Code),
 		Name:        req.Name,
 		Description: req.Description,
-		IsActive:    req.IsActive,
+		IsActive:    isActive,
 	}
 	r.data[id] = p
 	return &p, nil
@@ -51,6 +61,16 @@ func (r *projectRepository) GetByID(ctx context.Context, id string) (*ProjectRes
 		return nil, errors.New("not found")
 	}
 	return &p, nil
+}
+
+func (r *projectRepository) GetByCode(ctx context.Context, code string) (*ProjectResponse, error) {
+	n := normalizeCode(code)
+	for _, p := range r.data {
+		if p.Code == n {
+			return &p, nil
+		}
+	}
+	return nil, errors.New("not found")
 }
 
 func (r *projectRepository) Update(ctx context.Context, id string, req UpdateProjectRequest) (*ProjectResponse, error) {

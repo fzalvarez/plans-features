@@ -25,20 +25,19 @@ func (s *projectService) ListProjects(ctx context.Context) ([]ProjectResponse, e
 }
 
 func (s *projectService) CreateProject(ctx context.Context, req CreateProjectRequest) (*ProjectResponse, error) {
+	// Validation: code required
+	if req.Code == "" {
+		return nil, errors.New("code is required")
+	}
 	// Validation: name required
 	if req.Name == "" {
 		return nil, errors.New("name is required")
 	}
-	// Validation: code unique
-	projects, err := s.repo.List(ctx)
-	if err != nil {
-		return nil, err
+	// Validation: code unique (use repo GetByCode)
+	if _, err := s.repo.GetByCode(ctx, req.Code); err == nil {
+		return nil, errors.New("project code already exists")
 	}
-	for _, p := range projects {
-		if p.Code == req.Code {
-			return nil, errors.New("project code already exists")
-		}
-	}
+	// Default is_active handled by repository
 	return s.repo.Create(ctx, req)
 }
 

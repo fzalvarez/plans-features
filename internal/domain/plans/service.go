@@ -43,9 +43,13 @@ func (s *planService) CreatePlan(ctx context.Context, projectID string, req Crea
 		return nil, err
 	}
 	for _, p := range plans {
-		if p.Code == req.Code {
+		if p.Code == normalizeCode(req.Code) {
 			return nil, errors.New("plan code already exists")
 		}
+	}
+	// if first plan for project and IsDefault == false, force it to true
+	if len(plans) == 0 && !req.IsDefault {
+		req.IsDefault = true
 	}
 	// if IsDefault true, unset others
 	if req.IsDefault {

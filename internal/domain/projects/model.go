@@ -6,7 +6,7 @@ type CreateProjectRequest struct {
 	Code        string
 	Name        string
 	Description string
-	IsActive    bool
+	IsActive    *bool
 }
 
 type UpdateProjectRequest struct {

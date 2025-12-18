@@ -3,6 +3,7 @@ package plans
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -34,12 +35,16 @@ func (r *planRepository) List(ctx context.Context, projectID string) ([]PlanResp
 	return res, nil
 }
 
+func normalizeCode(code string) string {
+	return strings.ToLower(strings.TrimSpace(code))
+}
+
 func (r *planRepository) Create(ctx context.Context, projectID string, req CreatePlanRequest) (*PlanResponse, error) {
 	id := uuid.New().String()
 	p := PlanResponse{
 		ID:          id,
 		ProjectID:   projectID,
-		Code:        req.Code,
+		Code:        normalizeCode(req.Code),
 		Name:        req.Name,
 		Description: req.Description,
 		IsActive:    req.IsActive,

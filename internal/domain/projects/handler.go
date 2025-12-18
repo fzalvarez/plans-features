@@ -53,7 +53,7 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	p, err := h.service.CreateProject(r.Context(), req)
 	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, "internal error")
+		utils.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	utils.JSON(w, http.StatusCreated, p)
@@ -88,7 +88,7 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 // @Param projectId path string true "Project ID"
 // @Param project body projects.UpdateProjectRequest true "Update project"
 // @Success 200 {object} projects.ProjectResponse
-// @Router /admin/projects/{projectId} [patch]
+// @Router /admin/projects/{projectId} [put]
 func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "projectId")
 	var req UpdateProjectRequest
