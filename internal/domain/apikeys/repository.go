@@ -3,26 +3,27 @@ package apikeys
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/google/uuid"
 )
 
 type APIKeyRepository interface {
-	Create(ctx context.Context, projectID string, rawKey string) (*APIKeyResponse, error)
-	Rotate(ctx context.Context, projectID string, rawKey string) (*APIKeyResponse, error)
-	Revoke(ctx context.Context, projectID string, keyPrefix *string) error
+	Create(ctx context.Context, projectID uuid.UUID, rawKey string) (*APIKeyResponse, error)
+	Rotate(ctx context.Context, projectID uuid.UUID, rawKey string) (*APIKeyResponse, error)
+	Revoke(ctx context.Context, projectID uuid.UUID, keyPrefix *string) error
 	Validate(ctx context.Context, rawKey string) (*APIKeyResponse, error)
 }
 
 type apiKeyRepository struct {
-	data map[string]apiKeyEntity // id -> entity
+	db *sql.DB
 }
 
-func NewAPIKeyRepository() APIKeyRepository {
-	return &apiKeyRepository{data: make(map[string]apiKeyEntity)}
+func NewAPIKeyRepository(db *sql.DB) APIKeyRepository {
+	return &apiKeyRepository{db: db}
 }
 
 func hashKey(raw string) string {
@@ -37,61 +38,74 @@ func prefixOf(raw string) string {
 	return raw[:8]
 }
 
-func (r *apiKeyRepository) Create(ctx context.Context, projectID string, rawKey string) (*APIKeyResponse, error) {
-	id := uuid.New().String()
-	ent := apiKeyEntity{
-		ID:        id,
-		ProjectID: projectID,
-		KeyHash:   hashKey(rawKey),
-		KeyPrefix: prefixOf(rawKey),
-		CreatedAt: time.Now().UTC(),
-		Revoked:   false,
+func (r *apiKeyRepository) Create(ctx context.Context, projectID uuid.UUID, rawKey string) (*APIKeyResponse, error) {
+	id := uuid.New()
+	keyHash := hashKey(rawKey)
+	keyPrefix := prefixOf(rawKey)
+
+	apiKey := &APIKey{}
+	err := r.db.QueryRowContext(ctx,
+		`INSERT INTO api_keys (id, project_id, key_hash, key_prefix, revoked) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING id, project_id, key_hash, key_prefix, revoked, created_at`,
+		id, projectID, keyHash, keyPrefix, false).
+		Scan(&apiKey.ID, &apiKey.ProjectID, &apiKey.KeyHash, &apiKey.KeyPrefix,
+			&apiKey.Revoked, &apiKey.CreatedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("create api key: %w", err)
 	}
-	r.data[id] = ent
-	res := APIKeyResponse{
-		ID:        ent.ID,
-		ProjectID: ent.ProjectID,
-		KeyPrefix: ent.KeyPrefix,
-		CreatedAt: ent.CreatedAt,
-		Revoked:   ent.Revoked,
-	}
-	return &res, nil
+
+	return ToResponse(apiKey), nil
 }
 
-// Rotate: create a new key and leave old keys as-is (could revoke old if needed)
-func (r *apiKeyRepository) Rotate(ctx context.Context, projectID string, rawKey string) (*APIKeyResponse, error) {
+func (r *apiKeyRepository) Rotate(ctx context.Context, projectID uuid.UUID, rawKey string) (*APIKeyResponse, error) {
 	return r.Create(ctx, projectID, rawKey)
 }
 
-func (r *apiKeyRepository) Revoke(ctx context.Context, projectID string, keyPrefix *string) error {
-	for id, e := range r.data {
-		if e.ProjectID != projectID {
-			continue
-		}
-		if keyPrefix != nil {
-			if e.KeyPrefix != *keyPrefix {
-				continue
-			}
-		}
-		e.Revoked = true
-		r.data[id] = e
+func (r *apiKeyRepository) Revoke(ctx context.Context, projectID uuid.UUID, keyPrefix *string) error {
+	if keyPrefix == nil {
+		_, err := r.db.ExecContext(ctx,
+			`UPDATE api_keys SET revoked = true WHERE project_id = $1`, projectID)
+		return err
+	}
+
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE api_keys SET revoked = true WHERE project_id = $1 AND key_prefix = $2`,
+		projectID, *keyPrefix)
+	if err != nil {
+		return fmt.Errorf("revoke api key: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("check affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return errors.New("no api keys found with that prefix")
 	}
 	return nil
 }
 
-func (r *apiKeyRepository) Validate(ctx context.Context, rawKey string) (*APIKeyResponse, error) {
-	h := hashKey(rawKey)
-	for _, e := range r.data {
-		if e.KeyHash == h && !e.Revoked {
-			res := APIKeyResponse{
-				ID:        e.ID,
-				ProjectID: e.ProjectID,
-				KeyPrefix: e.KeyPrefix,
-				CreatedAt: e.CreatedAt,
-				Revoked:   e.Revoked,
-			}
-			return &res, nil
-		}
+func (r apiKeyRepository) Validate(ctx context.Context, rawKey string) (*APIKeyResponse, error) {
+	keyHash := hashKey(rawKey)
+
+	apiKey := &APIKey{}
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, project_id, key_hash, key_prefix, revoked, created_at 
+         FROM api_keys 
+         WHERE key_hash = $1 AND revoked = false 
+         LIMIT 1`,
+		keyHash).
+		Scan(&apiKey.ID, &apiKey.ProjectID, &apiKey.KeyHash,
+			&apiKey.KeyPrefix, &apiKey.Revoked, &apiKey.CreatedAt)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("invalid api key")
 	}
-	return nil, errors.New("invalid api key")
+	if err != nil {
+		return nil, fmt.Errorf("validate api key: %w", err)
+	}
+
+	return ToResponse(apiKey), nil
 }

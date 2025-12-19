@@ -7,6 +7,7 @@ import (
 	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type PlanHandler struct {
@@ -28,9 +29,14 @@ func NewPlanHandler(service PlanService) *PlanHandler {
 // @Failure 500 {object} map[string]string
 // @Router /api/plans [get]
 func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusUnauthorized, "invalid project ID")
 		return
 	}
 	ps, err := h.service.ListPlans(r.Context(), projectID)
@@ -55,11 +61,18 @@ func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/plans [post]
 func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
+
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusUnauthorized, "invalid project ID")
+		return
+	}
+
 	var req CreatePlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")
@@ -90,12 +103,24 @@ func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/plans/{planId} [get]
 func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
-	planID := chi.URLParam(r, "planId")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusUnauthorized, "invalid project ID")
+		return
+	}
+
+	planIDStr := chi.URLParam(r, "planId")
+	planID, err := uuid.Parse(planIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid plan ID")
+		return
+	}
+
 	p, err := h.service.GetPlan(r.Context(), projectID, planID)
 	if err != nil {
 		if err.Error() == "not found" {
@@ -124,12 +149,24 @@ func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/plans/{planId} [put]
 func (h *PlanHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
-	planID := chi.URLParam(r, "planId")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusUnauthorized, "invalid project ID")
+		return
+	}
+
+	planIDStr := chi.URLParam(r, "planId")
+	planID, err := uuid.Parse(planIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid plan ID")
+		return
+	}
+
 	var req UpdatePlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")

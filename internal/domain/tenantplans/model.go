@@ -19,21 +19,21 @@ type UpdateTenantPlanRequest struct {
 
 // TenantPlanResponse representa la respuesta de una asignación
 type TenantPlanResponse struct {
-	ID        string `json:"id"`
-	TenantID  string `json:"tenant_id"`
-	ProjectID string `json:"project_id"`
-	PlanID    string `json:"plan_id"`
+	ID        uuid.UUID `json:"id"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	ProjectID uuid.UUID `json:"project_id"`
+	PlanID    uuid.UUID `json:"plan_id"`
 }
 
 // API request para asignar plan usando project_id desde context
 type PlanAssignRequest struct {
-	PlanID string `json:"plan_id"`
+	PlanID uuid.UUID `json:"plan_id"`
 }
 
 // Interno para DB (Scan)
 type TenantPlan struct {
 	ID        uuid.UUID `db:"id"`
-	TenantID  string    `db:"tenant_id"`
+	TenantID  uuid.UUID `db:"tenant_id"`
 	ProjectID uuid.UUID `db:"project_id"`
 	PlanID    uuid.UUID `db:"plan_id"`
 	CreatedAt time.Time `db:"created_at"`

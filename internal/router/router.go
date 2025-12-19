@@ -1,7 +1,6 @@
 package router
 
 import (
-	"context"
 	"net/http"
 
 	"plans-features/internal/db"
@@ -11,8 +10,6 @@ import (
 	"plans-features/internal/domain/plans"
 	"plans-features/internal/domain/projects"
 	"plans-features/internal/domain/tenantplans"
-
-	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -28,12 +25,12 @@ func NewRouter(db *db.DB) http.Handler {
 	// -------------------------
 	// SINGLETON repositories
 	// -------------------------
-	projectRepo := projects.NewProjectRepository()
-	planRepo := plans.NewPlanRepository()
-	featureRepo := features.NewFeatureRepository()
-	tenantPlanRepo := tenantplans.NewTenantPlanRepository()
-	apiKeyRepo := apikeys.NewAPIKeyRepository()
-	planFeatureRepo := planfeatures.NewPlanFeatureRepository()
+	projectRepo := projects.NewProjectRepository(db.SQLDB())
+	planRepo := plans.NewPlanRepository(db.SQLDB())
+	featureRepo := features.NewFeatureRepository(db.SQLDB())
+	tenantPlanRepo := tenantplans.NewTenantPlanRepository(db.SQLDB())
+	apiKeyRepo := apikeys.NewAPIKeyRepository(db.SQLDB())
+	planFeatureRepo := planfeatures.NewPlanFeatureRepository(db.SQLDB())
 
 	// -------------------------
 	// Services with dependencies
@@ -69,7 +66,7 @@ func NewRouter(db *db.DB) http.Handler {
 	// -------------------------
 	// Middleware: ApiKeyAuth
 	// -------------------------
-	apiKeyAuth := func(next http.Handler) http.Handler {
+	/*apiKeyAuth := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// read X-API-Key or Authorization Bearer
 			key := r.Header.Get("X-API-Key")
@@ -96,7 +93,7 @@ func NewRouter(db *db.DB) http.Handler {
 	}
 
 	// register middleware
-	r.Use(apiKeyAuth)
+	r.Use(apiKeyAuth) */
 
 	// -------------------------
 	// Routes

@@ -9,6 +9,7 @@ import (
 	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type FeatureHandler struct {
@@ -30,9 +31,15 @@ func NewFeatureHandler(service FeatureService) *FeatureHandler {
 // @Failure 500 {object} map[string]string
 // @Router /api/features [get]
 func (h *FeatureHandler) ListFeatures(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+
+	projectID, err := uuid.Parse(projectIDStr) // ← Parse middleware string
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID")
 		return
 	}
 	fs, err := h.service.ListFeatures(r.Context(), projectID)
@@ -57,9 +64,15 @@ func (h *FeatureHandler) ListFeatures(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/features [post]
 func (h *FeatureHandler) CreateFeature(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID")
 		return
 	}
 	var req CreateFeatureRequest
@@ -92,12 +105,28 @@ func (h *FeatureHandler) CreateFeature(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/features/{featureId} [get]
 func (h *FeatureHandler) GetFeature(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
-	featureID := chi.URLParam(r, "featureId")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID")
+		return
+	}
+
+	featureIDStr := chi.URLParam(r, "featureId")
+	if !ok || featureIDStr == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+	featureID, err := uuid.Parse(featureIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid feature ID")
+		return
+	}
+
 	f, err := h.service.GetFeature(r.Context(), projectID, featureID)
 	if err != nil {
 		if err.Error() == "not found" {
@@ -126,12 +155,28 @@ func (h *FeatureHandler) GetFeature(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /api/features/{featureId} [put]
 func (h *FeatureHandler) UpdateFeature(w http.ResponseWriter, r *http.Request) {
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
-	featureID := chi.URLParam(r, "featureId")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID")
+		return
+	}
+
+	featureIDStr := chi.URLParam(r, "featureId")
+	if !ok || featureIDStr == "" {
+		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+
+	featureID, err := uuid.Parse(featureIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid feature ID")
+		return
+	}
 	var req UpdateFeatureRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")

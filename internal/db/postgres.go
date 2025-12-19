@@ -13,6 +13,10 @@ type DB struct {
 	*sql.DB
 }
 
+func (db *DB) SQLDB() *sql.DB {
+	return db.DB
+}
+
 func New(dsn string) (*DB, error) {
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {

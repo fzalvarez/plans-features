@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,9 +31,47 @@ type UpdateProjectRequest struct {
 }
 
 type ProjectResponse struct {
-	ID          string `json:"id"`
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    bool   `json:"is_active"`
+	ID          uuid.UUID `json:"id"`
+	Code        string    `json:"code"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	IsActive    bool      `json:"is_active"`
+}
+
+func ToResponse(proj *Project) *ProjectResponse {
+	resp := &ProjectResponse{
+		ID:       proj.ID,
+		Code:     proj.Code,
+		Name:     proj.Name,
+		IsActive: proj.IsActive,
+	}
+	if proj.Description != nil {
+		resp.Description = *proj.Description
+	}
+	return resp
+}
+
+func ToCreateRequest(req *CreateProjectRequest) *Project {
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+	var desc *string
+	if req.Description != "" {
+		desc = &req.Description
+	}
+	return &Project{
+		Code:        req.Code,
+		Name:        req.Name,
+		Description: desc,
+		IsActive:    isActive,
+	}
+}
+
+func nullStringToPtr(ns sql.NullString) *string {
+	if ns.Valid && ns.String != "" {
+		s := ns.String
+		return &s
+	}
+	return nil
 }

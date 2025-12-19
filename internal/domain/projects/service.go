@@ -3,13 +3,15 @@ package projects
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 type ProjectService interface {
 	ListProjects(ctx context.Context) ([]ProjectResponse, error)
 	CreateProject(ctx context.Context, req CreateProjectRequest) (*ProjectResponse, error)
-	GetProject(ctx context.Context, id string) (*ProjectResponse, error)
-	UpdateProject(ctx context.Context, id string, req UpdateProjectRequest) (*ProjectResponse, error)
+	GetProject(ctx context.Context, id uuid.UUID) (*ProjectResponse, error)
+	UpdateProject(ctx context.Context, id uuid.UUID, req UpdateProjectRequest) (*ProjectResponse, error)
 }
 
 type projectService struct {
@@ -41,11 +43,11 @@ func (s *projectService) CreateProject(ctx context.Context, req CreateProjectReq
 	return s.repo.Create(ctx, req)
 }
 
-func (s *projectService) GetProject(ctx context.Context, id string) (*ProjectResponse, error) {
+func (s *projectService) GetProject(ctx context.Context, id uuid.UUID) (*ProjectResponse, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *projectService) UpdateProject(ctx context.Context, id string, req UpdateProjectRequest) (*ProjectResponse, error) {
+func (s *projectService) UpdateProject(ctx context.Context, id uuid.UUID, req UpdateProjectRequest) (*ProjectResponse, error) {
 	// Do not allow changing Code: UpdateProjectRequest does not include Code, so ignore if provided in payload
 	return s.repo.Update(ctx, id, req)
 }

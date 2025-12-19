@@ -12,10 +12,10 @@ import (
 )
 
 type APIKeyService interface {
-	CreateKey(ctx context.Context, projectID string) (*CreateAPIKeyResult, error)
-	RotateKey(ctx context.Context, projectID string) (*CreateAPIKeyResult, error)
-	RevokeKey(ctx context.Context, projectID string, keyPrefix *string) error
-	ValidateKey(ctx context.Context, rawKey string) (string, error) // returns projectID
+	CreateKey(ctx context.Context, projectID uuid.UUID) (*CreateAPIKeyResult, error)
+	RotateKey(ctx context.Context, projectID uuid.UUID) (*CreateAPIKeyResult, error)
+	RevokeKey(ctx context.Context, projectID uuid.UUID, keyPrefix *string) error
+	ValidateKey(ctx context.Context, rawKey string) (uuid.UUID, error) // returns projectID
 }
 
 type apiKeyService struct {
@@ -33,7 +33,7 @@ func genRawKey() string {
 	return fmt.Sprintf("%s.%d", uuid.New().String(), time.Now().Unix())
 }
 
-func (s *apiKeyService) CreateKey(ctx context.Context, projectID string) (*CreateAPIKeyResult, error) {
+func (s *apiKeyService) CreateKey(ctx context.Context, projectID uuid.UUID) (*CreateAPIKeyResult, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")
@@ -49,7 +49,7 @@ func (s *apiKeyService) CreateKey(ctx context.Context, projectID string) (*Creat
 	return &CreateAPIKeyResult{RawKey: raw, Key: *res}, nil
 }
 
-func (s *apiKeyService) RotateKey(ctx context.Context, projectID string) (*CreateAPIKeyResult, error) {
+func (s *apiKeyService) RotateKey(ctx context.Context, projectID uuid.UUID) (*CreateAPIKeyResult, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")
@@ -65,18 +65,17 @@ func (s *apiKeyService) RotateKey(ctx context.Context, projectID string) (*Creat
 	return &CreateAPIKeyResult{RawKey: raw, Key: *res}, nil
 }
 
-func (s *apiKeyService) RevokeKey(ctx context.Context, projectID string, keyPrefix *string) error {
-	// validate project exists
+func (s *apiKeyService) RevokeKey(ctx context.Context, projectID uuid.UUID, keyPrefix *string) error {
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return errors.New("project not found")
 	}
 	return s.repo.Revoke(ctx, projectID, keyPrefix)
 }
 
-func (s *apiKeyService) ValidateKey(ctx context.Context, rawKey string) (string, error) {
+func (s *apiKeyService) ValidateKey(ctx context.Context, rawKey string) (uuid.UUID, error) {
 	res, err := s.repo.Validate(ctx, rawKey)
 	if err != nil {
-		return "", errors.New("invalid api key")
+		return uuid.Nil, errors.New("invalid api key")
 	}
 	return res.ProjectID, nil
 }

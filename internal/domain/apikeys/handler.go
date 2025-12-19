@@ -7,6 +7,7 @@ import (
 	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type APIKeyHandler struct {
@@ -31,8 +32,13 @@ func NewAPIKeyHandler(s APIKeyService) *APIKeyHandler {
 // @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId}/apikeys [post]
 func (h *APIKeyHandler) CreateKey(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
-	res, err := h.service.CreateKey(r.Context(), projectID)
+	projectIDstr := chi.URLParam(r, "projectId")
+	id, err := uuid.Parse(projectIDstr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID format")
+		return
+	}
+	res, err := h.service.CreateKey(r.Context(), id)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -55,8 +61,13 @@ func (h *APIKeyHandler) CreateKey(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId}/apikeys/rotate [post]
 func (h *APIKeyHandler) RotateKey(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
-	res, err := h.service.RotateKey(r.Context(), projectID)
+	projectIDstr := chi.URLParam(r, "projectId")
+	id, err := uuid.Parse(projectIDstr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID format")
+		return
+	}
+	res, err := h.service.RotateKey(r.Context(), id)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -79,7 +90,12 @@ func (h *APIKeyHandler) RotateKey(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId}/apikeys/revoke [post]
 func (h *APIKeyHandler) RevokeKey(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectId")
+	projectIDstr := chi.URLParam(r, "projectId")
+	id, err := uuid.Parse(projectIDstr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID format")
+		return
+	}
 	var req RevokeAPIKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		// allow empty body
@@ -88,7 +104,7 @@ func (h *APIKeyHandler) RevokeKey(w http.ResponseWriter, r *http.Request) {
 	if req.KeyPrefix != nil {
 		prefix = req.KeyPrefix
 	}
-	if err := h.service.RevokeKey(r.Context(), projectID, prefix); err != nil {
+	if err := h.service.RevokeKey(r.Context(), id, prefix); err != nil {
 		utils.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}

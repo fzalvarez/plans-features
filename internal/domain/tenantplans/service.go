@@ -6,16 +6,18 @@ import (
 
 	"plans-features/internal/domain/plans"
 	"plans-features/internal/domain/projects"
+
+	"github.com/google/uuid"
 )
 
 type TenantPlanService interface {
-	ListAssignments(ctx context.Context, tenantID string) ([]TenantPlanResponse, error)
-	CreateAssignment(ctx context.Context, tenantID string, req CreateTenantPlanRequest) (*TenantPlanResponse, error)
-	UpdateAssignment(ctx context.Context, tenantID string, assignmentID string, req UpdateTenantPlanRequest) (*TenantPlanResponse, error)
+	ListAssignments(ctx context.Context, tenantID uuid.UUID) ([]TenantPlanResponse, error)
+	CreateAssignment(ctx context.Context, tenantID uuid.UUID, req CreateTenantPlanRequest) (*TenantPlanResponse, error)
+	UpdateAssignment(ctx context.Context, tenantID uuid.UUID, assignmentID uuid.UUID, req UpdateTenantPlanRequest) (*TenantPlanResponse, error)
 
 	// API methods
-	GetTenantPlan(ctx context.Context, tenantID string, projectID string) (*TenantPlanResponse, error)
-	AssignTenantPlan(ctx context.Context, tenantID string, projectID string, planID string) (*TenantPlanResponse, error)
+	GetTenantPlan(ctx context.Context, tenantID uuid.UUID, projectID uuid.UUID) (*TenantPlanResponse, error)
+	AssignTenantPlan(ctx context.Context, tenantID uuid.UUID, projectID uuid.UUID, planID uuid.UUID) (*TenantPlanResponse, error)
 }
 
 type tenantPlanService struct {
@@ -36,11 +38,11 @@ func NewTenantPlanService(
 	}
 }
 
-func (s *tenantPlanService) ListAssignments(ctx context.Context, tenantID string) ([]TenantPlanResponse, error) {
+func (s *tenantPlanService) ListAssignments(ctx context.Context, tenantID uuid.UUID) ([]TenantPlanResponse, error) {
 	return s.repo.ListByTenant(ctx, tenantID)
 }
 
-func (s *tenantPlanService) CreateAssignment(ctx context.Context, tenantID string, req CreateTenantPlanRequest) (*TenantPlanResponse, error) {
+func (s *tenantPlanService) CreateAssignment(ctx context.Context, tenantID uuid.UUID, req CreateTenantPlanRequest) (*TenantPlanResponse, error) {
 
 	// project code required
 	if req.ProjectCode == "" {
@@ -61,7 +63,7 @@ func (s *tenantPlanService) CreateAssignment(ctx context.Context, tenantID strin
 		return nil, err
 	}
 	for _, a := range assignments {
-		if a.ProjectID == req.ProjectCode {
+		if a.ProjectID.String() == req.ProjectCode {
 			return nil, errors.New("project already assigned")
 		}
 	}
@@ -69,13 +71,13 @@ func (s *tenantPlanService) CreateAssignment(ctx context.Context, tenantID strin
 	return s.repo.Create(ctx, tenantID, req)
 }
 
-func (s *tenantPlanService) UpdateAssignment(ctx context.Context, tenantID string, assignmentID string, req UpdateTenantPlanRequest) (*TenantPlanResponse, error) {
+func (s *tenantPlanService) UpdateAssignment(ctx context.Context, tenantID uuid.UUID, assignmentID uuid.UUID, req UpdateTenantPlanRequest) (*TenantPlanResponse, error) {
 	// ignore project changes (not allowed yet)
 	return s.repo.Update(ctx, tenantID, assignmentID, req)
 }
 
 // GetTenantPlan devuelve la asignación efectiva del tenant para el proyecto o el plan por defecto
-func (s *tenantPlanService) GetTenantPlan(ctx context.Context, tenantID string, projectID string) (*TenantPlanResponse, error) {
+func (s *tenantPlanService) GetTenantPlan(ctx context.Context, tenantID uuid.UUID, projectID uuid.UUID) (*TenantPlanResponse, error) {
 	// try explicit assignment
 	if tp, err := s.repo.GetByTenantAndProject(ctx, tenantID, projectID); err == nil {
 		return tp, nil
@@ -89,7 +91,7 @@ func (s *tenantPlanService) GetTenantPlan(ctx context.Context, tenantID string, 
 		if p.IsDefault {
 			// return a synthetic assignment (not persisted)
 			res := TenantPlanResponse{
-				ID:        "",
+				ID:        uuid.Nil,
 				TenantID:  tenantID,
 				ProjectID: projectID,
 				PlanID:    p.ID,
@@ -101,7 +103,7 @@ func (s *tenantPlanService) GetTenantPlan(ctx context.Context, tenantID string, 
 }
 
 // AssignTenantPlan asigna o actualiza la asignación del tenant para el proyecto
-func (s *tenantPlanService) AssignTenantPlan(ctx context.Context, tenantID string, projectID string, planID string) (*TenantPlanResponse, error) {
+func (s *tenantPlanService) AssignTenantPlan(ctx context.Context, tenantID uuid.UUID, projectID uuid.UUID, planID uuid.UUID) (*TenantPlanResponse, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")

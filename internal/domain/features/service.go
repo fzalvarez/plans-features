@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 	"plans-features/internal/domain/projects"
+
+	"github.com/google/uuid"
 )
 
-// TODO: lógica de negocio para features
-
 type FeatureService interface {
-	ListFeatures(ctx context.Context, projectID string) ([]FeatureResponse, error)
-	CreateFeature(ctx context.Context, projectID string, req CreateFeatureRequest) (*FeatureResponse, error)
-	GetFeature(ctx context.Context, projectID string, featureID string) (*FeatureResponse, error)
-	UpdateFeature(ctx context.Context, projectID string, featureID string, req UpdateFeatureRequest) (*FeatureResponse, error)
+	ListFeatures(ctx context.Context, projectID uuid.UUID) ([]FeatureResponse, error)
+	CreateFeature(ctx context.Context, projectID uuid.UUID, req CreateFeatureRequest) (*FeatureResponse, error)
+	GetFeature(ctx context.Context, projectID uuid.UUID, featureID uuid.UUID) (*FeatureResponse, error)
+	UpdateFeature(ctx context.Context, projectID uuid.UUID, featureID uuid.UUID, req UpdateFeatureRequest) (*FeatureResponse, error)
 }
 
 type featureService struct {
@@ -33,11 +33,11 @@ func isValidType(t string) bool {
 	}
 }
 
-func (s *featureService) ListFeatures(ctx context.Context, projectID string) ([]FeatureResponse, error) {
+func (s *featureService) ListFeatures(ctx context.Context, projectID uuid.UUID) ([]FeatureResponse, error) {
 	return s.repo.List(ctx, projectID)
 }
 
-func (s *featureService) CreateFeature(ctx context.Context, projectID string, req CreateFeatureRequest) (*FeatureResponse, error) {
+func (s *featureService) CreateFeature(ctx context.Context, projectID uuid.UUID, req CreateFeatureRequest) (*FeatureResponse, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")
@@ -64,11 +64,11 @@ func (s *featureService) CreateFeature(ctx context.Context, projectID string, re
 	return s.repo.Create(ctx, projectID, req)
 }
 
-func (s *featureService) GetFeature(ctx context.Context, projectID string, featureID string) (*FeatureResponse, error) {
+func (s *featureService) GetFeature(ctx context.Context, projectID uuid.UUID, featureID uuid.UUID) (*FeatureResponse, error) {
 	return s.repo.GetByID(ctx, projectID, featureID)
 }
 
-func (s *featureService) UpdateFeature(ctx context.Context, projectID string, featureID string, req UpdateFeatureRequest) (*FeatureResponse, error) {
+func (s *featureService) UpdateFeature(ctx context.Context, projectID uuid.UUID, featureID uuid.UUID, req UpdateFeatureRequest) (*FeatureResponse, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")

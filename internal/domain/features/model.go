@@ -1,6 +1,7 @@
 package features
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,11 +35,34 @@ type UpdateFeatureRequest struct {
 }
 
 type FeatureResponse struct {
-	ID          string `json:"id"`
-	ProjectID   string `json:"project_id"`
-	Code        string `json:"code"`
-	Type        string `json:"type"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    bool   `json:"is_active"`
+	ID          uuid.UUID `json:"id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Code        string    `json:"code"`
+	Type        string    `json:"type"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	IsActive    bool      `json:"is_active"`
+}
+
+func ToResponse(feat *Feature) *FeatureResponse {
+	resp := &FeatureResponse{
+		ID:        feat.ID,
+		ProjectID: feat.ProjectID,
+		Code:      feat.Code,
+		Type:      feat.Type,
+		Name:      feat.Name,
+		IsActive:  feat.IsActive,
+	}
+	if feat.Description != nil {
+		resp.Description = *feat.Description
+	}
+	return resp
+}
+
+func nullStringToPtr(ns sql.NullString) *string {
+	if ns.Valid && ns.String != "" {
+		s := ns.String
+		return &s
+	}
+	return nil
 }

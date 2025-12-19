@@ -9,6 +9,7 @@ import (
 	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type TenantPlanHandler struct {
@@ -29,7 +30,13 @@ func NewTenantPlanHandler(service TenantPlanService) *TenantPlanHandler {
 // @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments [get]
 func (h *TenantPlanHandler) ListAssignments(w http.ResponseWriter, r *http.Request) {
-	tenantID := chi.URLParam(r, "tenantId")
+	tenantIDStr := chi.URLParam(r, "tenantId")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+
 	as, err := h.service.ListAssignments(r.Context(), tenantID)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err.Error())
@@ -51,7 +58,13 @@ func (h *TenantPlanHandler) ListAssignments(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments [post]
 func (h *TenantPlanHandler) CreateAssignment(w http.ResponseWriter, r *http.Request) {
-	tenantID := chi.URLParam(r, "tenantId")
+	tenantIDStr := chi.URLParam(r, "tenantId")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+
 	var req CreateTenantPlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")
@@ -84,8 +97,19 @@ func (h *TenantPlanHandler) CreateAssignment(w http.ResponseWriter, r *http.Requ
 // @Failure 500 {object} map[string]string
 // @Router /admin/tenants/{tenantId}/assignments/{assignmentId} [patch]
 func (h *TenantPlanHandler) UpdateAssignment(w http.ResponseWriter, r *http.Request) {
-	tenantID := chi.URLParam(r, "tenantId")
-	assignmentID := chi.URLParam(r, "assignmentId")
+	tenantIDStr := chi.URLParam(r, "tenantId")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+
+	assignmentIDStr := chi.URLParam(r, "assignmentId")
+	assignmentID, err := uuid.Parse(assignmentIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid assignment ID")
+		return
+	}
 	var req UpdateTenantPlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")
@@ -116,10 +140,21 @@ func (h *TenantPlanHandler) UpdateAssignment(w http.ResponseWriter, r *http.Requ
 // @Failure 500 {object} map[string]string
 // @Router /api/tenants/{tenantId}/plan [get]
 func (h *TenantPlanHandler) GetTenantPlan(w http.ResponseWriter, r *http.Request) {
-	tenantID := chi.URLParam(r, "tenantId")
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	tenantIDStr := chi.URLParam(r, "tenantId")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
+		return
+	}
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID")
 		return
 	}
 	p, err := h.service.GetTenantPlan(r.Context(), tenantID, projectID)
@@ -145,18 +180,24 @@ func (h *TenantPlanHandler) GetTenantPlan(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} map[string]string
 // @Router /api/tenants/{tenantId}/plan [post]
 func (h *TenantPlanHandler) AssignTenantPlan(w http.ResponseWriter, r *http.Request) {
-	tenantID := chi.URLParam(r, "tenantId")
-	projectID, ok := r.Context().Value("project_id").(string)
-	if !ok || projectID == "" {
+	tenantIDStr := chi.URLParam(r, "tenantId")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+	projectIDStr, ok := r.Context().Value("project_id").(string)
+	if !ok || projectIDStr == "" {
 		utils.Error(w, http.StatusUnauthorized, "missing project context")
 		return
 	}
+	projectID, err := uuid.Parse(projectIDStr)
 	var req PlanAssignRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	if req.PlanID == "" {
+	if req.PlanID == uuid.Nil {
 		utils.Error(w, http.StatusBadRequest, "plan_id is required")
 		return
 	}

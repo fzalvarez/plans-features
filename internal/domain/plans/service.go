@@ -5,14 +5,16 @@ import (
 	"errors"
 
 	"plans-features/internal/domain/projects"
+
+	"github.com/google/uuid"
 )
 
 // PlanService defines business operations for plans
 type PlanService interface {
-	ListPlans(ctx context.Context, projectID string) ([]PlanResponse, error)
-	CreatePlan(ctx context.Context, projectID string, req CreatePlanRequest) (*PlanResponse, error)
-	GetPlan(ctx context.Context, projectID string, planID string) (*PlanResponse, error)
-	UpdatePlan(ctx context.Context, projectID string, planID string, req UpdatePlanRequest) (*PlanResponse, error)
+	ListPlans(ctx context.Context, projectID uuid.UUID) ([]PlanResponse, error)
+	CreatePlan(ctx context.Context, projectID uuid.UUID, req CreatePlanRequest) (*PlanResponse, error)
+	GetPlan(ctx context.Context, projectID uuid.UUID, planID uuid.UUID) (*PlanResponse, error)
+	UpdatePlan(ctx context.Context, projectID uuid.UUID, planID uuid.UUID, req UpdatePlanRequest) (*PlanResponse, error)
 }
 
 type planService struct {
@@ -24,11 +26,11 @@ func NewPlanService(repo PlanRepository, projectRepo projects.ProjectRepository)
 	return &planService{repo: repo, projectRepo: projectRepo}
 }
 
-func (s *planService) ListPlans(ctx context.Context, projectID string) ([]PlanResponse, error) {
+func (s *planService) ListPlans(ctx context.Context, projectID uuid.UUID) ([]PlanResponse, error) {
 	return s.repo.List(ctx, projectID)
 }
 
-func (s *planService) CreatePlan(ctx context.Context, projectID string, req CreatePlanRequest) (*PlanResponse, error) {
+func (s *planService) CreatePlan(ctx context.Context, projectID uuid.UUID, req CreatePlanRequest) (*PlanResponse, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")
@@ -63,11 +65,11 @@ func (s *planService) CreatePlan(ctx context.Context, projectID string, req Crea
 	return s.repo.Create(ctx, projectID, req)
 }
 
-func (s *planService) GetPlan(ctx context.Context, projectID string, planID string) (*PlanResponse, error) {
+func (s *planService) GetPlan(ctx context.Context, projectID uuid.UUID, planID uuid.UUID) (*PlanResponse, error) {
 	return s.repo.GetByID(ctx, projectID, planID)
 }
 
-func (s *planService) UpdatePlan(ctx context.Context, projectID string, planID string, req UpdatePlanRequest) (*PlanResponse, error) {
+func (s *planService) UpdatePlan(ctx context.Context, projectID uuid.UUID, planID uuid.UUID, req UpdatePlanRequest) (*PlanResponse, error) {
 	// validate project exists
 	if _, err := s.projectRepo.GetByID(ctx, projectID); err != nil {
 		return nil, errors.New("project not found")

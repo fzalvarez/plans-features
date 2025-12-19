@@ -38,12 +38,28 @@ type UpdatePlanRequest struct {
 }
 
 type PlanResponse struct {
-	ID          string                 `json:"id"`
-	ProjectID   string                 `json:"project_id"`
+	ID          uuid.UUID              `json:"id"`
+	ProjectID   uuid.UUID              `json:"project_id"`
 	Code        string                 `json:"code"`
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
 	IsActive    bool                   `json:"is_active"`
 	IsDefault   bool                   `json:"is_default"`
 	Limits      map[string]interface{} `json:"limits"`
+}
+
+func ToResponse(plan *Plan) *PlanResponse {
+	resp := &PlanResponse{
+		ID:        plan.ID,
+		ProjectID: plan.ProjectID,
+		Code:      plan.Code,
+		Name:      plan.Name,
+		IsActive:  plan.IsActive,
+		IsDefault: plan.IsDefault,
+		Limits:    plan.Limits,
+	}
+	if plan.Description != nil {
+		resp.Description = *plan.Description
+	}
+	return resp
 }

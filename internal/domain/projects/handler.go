@@ -7,6 +7,7 @@ import (
 	"plans-features/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type ProjectHandler struct {
@@ -81,11 +82,17 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId} [get]
 func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "projectId")
+	idStr := chi.URLParam(r, "projectId")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID format")
+		return
+	}
+
 	p, err := h.service.GetProject(r.Context(), id)
 	if err != nil {
-		if err.Error() == "not found" {
-			utils.Error(w, http.StatusNotFound, "not found")
+		if err.Error() == "project not found" {
+			utils.Error(w, http.StatusNotFound, "project not found")
 			return
 		}
 		utils.Error(w, http.StatusInternalServerError, "internal error")
@@ -110,16 +117,23 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} map[string]string
 // @Router /admin/projects/{projectId} [put]
 func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "projectId")
-	var req UpdateProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.Error(w, http.StatusBadRequest, "invalid body")
+	idStr := chi.URLParam(r, "projectId")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid project ID format")
 		return
 	}
-	p, err := h.service.UpdateProject(r.Context(), id, req)
+
+	var req UpdateProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	p, err := h.service.UpdateProject(r.Context(), id, req) // ← uuid.UUID
 	if err != nil {
-		if err.Error() == "not found" {
-			utils.Error(w, http.StatusNotFound, "not found")
+		if err.Error() == "project not found" { // ← Mensaje exacto del repo
+			utils.Error(w, http.StatusNotFound, "project not found")
 			return
 		}
 		utils.Error(w, http.StatusInternalServerError, "internal error")

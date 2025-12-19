@@ -28,8 +28,8 @@ type RevokeAPIKeyRequest struct {
 }
 
 type APIKeyResponse struct {
-	ID        string    `json:"id"`
-	ProjectID string    `json:"project_id"`
+	ID        uuid.UUID `json:"id"`
+	ProjectID uuid.UUID `json:"project_id"`
 	KeyPrefix string    `json:"key_prefix"`
 	CreatedAt time.Time `json:"created_at"`
 	Revoked   bool      `json:"revoked"`
@@ -37,10 +37,20 @@ type APIKeyResponse struct {
 
 // Interno para DB (sin uuid.UUID para Scan simple)
 type apiKeyEntity struct {
-	ID        string
-	ProjectID string
+	ID        uuid.UUID
+	ProjectID uuid.UUID
 	KeyHash   string
 	KeyPrefix string
 	CreatedAt time.Time
 	Revoked   bool
+}
+
+func ToResponse(apiKey *APIKey) *APIKeyResponse {
+	return &APIKeyResponse{
+		ID:        apiKey.ID,
+		ProjectID: apiKey.ProjectID,
+		KeyPrefix: apiKey.KeyPrefix,
+		CreatedAt: apiKey.CreatedAt,
+		Revoked:   apiKey.Revoked,
+	}
 }
